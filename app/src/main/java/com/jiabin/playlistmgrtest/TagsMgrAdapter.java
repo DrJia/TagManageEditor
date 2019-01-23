@@ -7,7 +7,6 @@ import android.support.annotation.NonNull;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,7 +27,7 @@ import java.util.List;
 
 public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements OnItemMoveListener {
 
-    private static final long ANIM_TIME = 360L;
+    private static final long ANIM_TIME = 250L;
 
     // 我的 标题部分
     public static final int TYPE_MY_TAG_HEADER = 1;
@@ -54,6 +53,7 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private int totalSize;
 
     private int mSpace;
+    private int mMargin;
     private int mItemWidth;
     private int mScreenWitdh;
     private int mSpanCount;
@@ -63,14 +63,15 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private Context mContext;
 
 
-    public TagsMgrAdapter(Context context, @NonNull ItemTouchHelper helper, int spanCount, int space , @NonNull List<Tag> myTags, @NonNull List<TagsEntry> allTagsEntries) {
+    public TagsMgrAdapter(Context context, @NonNull ItemTouchHelper helper, int spanCount, int space, int margin, @NonNull List<Tag> myTags, @NonNull List<TagsEntry> allTagsEntries) {
         mContext = context;
         mInflater = LayoutInflater.from(context);
         mItemTouchHelper = helper;
         mScreenWitdh = DimensionUtils.getScreenWidth(context);
         mSpace = space;
+        mMargin = margin;
         mSpanCount = spanCount;
-        mItemWidth = (mScreenWitdh - mSpace * (spanCount + 1)) / spanCount;
+        mItemWidth = (mScreenWitdh - mSpace * (spanCount + 1) - mMargin * 2) / spanCount;
         refreshList(myTags, allTagsEntries);
     }
 
@@ -87,8 +88,8 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-    private int getXoffset(int index){
-        if(index > mSpanCount - 1){
+    private int getXoffset(int index) {
+        if (index > mSpanCount - 1) {
             return -1;
         }
         int offset = mSpace + index * (mItemWidth + mSpace);
@@ -274,7 +275,7 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 myHolder.itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if(mIsAniming){
+                        if (mIsAniming) {
                             return;
                         }
                         int position = myHolder.getAdapterPosition();
@@ -296,30 +297,30 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                             }
 
                             int otherPos = getOtherPosition(myTag);
-                            if(otherPos < 0){
+                            if (otherPos < 0) {
                                 return;
                             }
                             View currentView = manager.findViewByPosition(position);
                             View targetView = manager.findViewByPosition(otherPos);
                             int otherIndex = getOtherTagIndex(otherPos);
-                            if(otherIndex < 0){
+                            if (otherIndex < 0) {
                                 return;
                             }
                             //int pos = manager.findLastVisibleItemPosition();
 
                             otherIndex = otherIndex % mSpanCount;
                             int targetX = getXoffset(otherIndex);
-                            if(recyclerView.indexOfChild(targetView) >= 0){
+                            if (recyclerView.indexOfChild(targetView) >= 0) {
                                 int targetY = targetView.getTop();
                                 int lastMyPosition = myTagsSize - 1;
-                                if(lastMyPosition % mSpanCount == 0){
+                                if (lastMyPosition % mSpanCount == 0) {
                                     //我的里面最后一个在最后一个第一行
                                     targetY = targetY - targetView.getHeight() - mSpace;
                                 }
-                                startAnimationMy(recyclerView,currentView,targetX,targetY);
+                                startAnimationMy(recyclerView, currentView, targetX, targetY);
 
-                            }else {
-                                startAnimationMy(recyclerView,currentView,targetX,recyclerView.getBottom() + 100);
+                            } else {
+                                startAnimationMy(recyclerView, currentView, targetX, recyclerView.getBottom() + 100);
                             }
                             notifyItemChanged(otherPos);
                             removeMyTag(position);
@@ -366,7 +367,7 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     @Override
                     public void onClick(View v) {
                         //
-                        if(mIsAniming){
+                        if (mIsAniming) {
                             return;
                         }
 
@@ -374,16 +375,16 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                         RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
                         int position = otherHolder.getAdapterPosition();
                         Tag otherTag = getOtherTag(position);
-                        if(otherTag == null){
+                        if (otherTag == null) {
                             return;
                         }
-                        if(isEditMode){
+                        if (isEditMode) {
                             // 如果RecyclerView滑动到底部,移动的目标位置的y轴 - height
                             View currentView = manager.findViewByPosition(position);
                             // 目标位置的前一个item  即当前MyChannel的最后一个
                             View preTargetView = manager.findViewByPosition(myTagsSize);// -1 + 1
 
-                            int myIndex = (myTagsSize - 1 + 1)% mSpanCount;
+                            int myIndex = (myTagsSize - 1 + 1) % mSpanCount;
                             int targetX = getXoffset(myIndex);
 
 //                        GridLayoutManager gridLayoutManager = ((GridLayoutManager) manager);
@@ -397,11 +398,11 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                                 int itemHeight = preTargetView.getHeight();
                                 // target 在最后一行第一个
                                 if ((targetPosition - 1) % mSpanCount == 0) {
-                                    targetY = targetY+ itemHeight + mSpace;
+                                    targetY = targetY + itemHeight + mSpace;
                                 }
                                 startAnimationOther(recyclerView, currentView, targetX, targetY);
                             } else {
-                                startAnimationOther(recyclerView, currentView, targetX, -100);
+                                startAnimationOther(recyclerView, currentView, targetX, -currentView.getHeight()-100);
                             }
 
                             if (otherTag.isDisable) {
@@ -412,7 +413,7 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
                             addMyTag(recyclerView, otherTag);
                             //moveOtherToMy(otherHolder, recyclerView);
-                        }else {
+                        } else {
                             Toast.makeText(mContext, "" + otherTag.name, Toast.LENGTH_SHORT).show();
                         }
 
@@ -444,7 +445,7 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 //        }, ANIM_TIME);
 //    }
 
-    //private Handler delayHandler = new Handler();
+    private Handler delayHandler = new Handler();
 
     /**
      * 开始增删动画 从其他到我的
@@ -467,14 +468,20 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                mIsAniming = false;
-                viewGroup.removeView(mirrorView);
-//                if (currentView.getVisibility() == View.INVISIBLE) {
-//                    currentView.setVisibility(View.VISIBLE);
-//                }
-                if(!currentView.isEnabled()){
-                    currentView.setEnabled(true);
-                }
+                delayHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        mIsAniming = false;
+                        viewGroup.removeView(mirrorView);
+//                        if (currentView.getVisibility() == View.INVISIBLE) {
+//                            currentView.setVisibility(View.VISIBLE);
+//                        }
+                        if (!currentView.isEnabled()) {
+                            currentView.setEnabled(true);
+                        }
+                    }
+                }, 360);
+
             }
 
             @Override
@@ -510,7 +517,7 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 if (currentView.getVisibility() == View.INVISIBLE) {
                     currentView.setVisibility(View.VISIBLE);
                 }
-                if(!currentView.isEnabled()){
+                if (!currentView.isEnabled()) {
                     currentView.setEnabled(true);
                 }
             }
@@ -733,7 +740,7 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 //        }
     }
 
-    private int getOtherPosition(Tag myTag){
+    private int getOtherPosition(Tag myTag) {
         int otherPos = myTagsSize + 1;
         for (int i = 0; i < mAllTagsEntries.size(); i++) {
             TagsEntry entry = mAllTagsEntries.get(i);
@@ -842,7 +849,7 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         public OtherViewHolder(View itemView) {
             super(itemView);
             textView = (TextView) itemView.findViewById(R.id.tv);
-            plus = (TextView)itemView.findViewById(R.id.plus);
+            plus = (TextView) itemView.findViewById(R.id.plus);
         }
     }
 

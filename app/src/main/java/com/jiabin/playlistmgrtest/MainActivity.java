@@ -6,6 +6,7 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.jiabin.playlistmgrtest.entry.Tag;
@@ -19,6 +20,8 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView mRecy;
+    int margin = 18;
+    int space = 30;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +29,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mRecy = (RecyclerView) findViewById(R.id.recy);
+        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) mRecy.getLayoutParams();
+        lp.setMargins(margin , 0 , margin , 0);
+        mRecy.requestLayout();
         init();
     }
 
@@ -101,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
         final ItemTouchHelper helper = new ItemTouchHelper(callback);
         helper.attachToRecyclerView(mRecy);
 
-        final TagsMgrAdapter adapter = new TagsMgrAdapter(this, helper,4, 30 , items, entryList);
+        final TagsMgrAdapter adapter = new TagsMgrAdapter(this, helper,4, space , margin,items, entryList);
         manager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int position) {
