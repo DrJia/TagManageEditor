@@ -402,7 +402,7 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                                 }
                                 startAnimationOther(recyclerView, currentView, targetX, targetY);
                             } else {
-                                startAnimationOther(recyclerView, currentView, targetX, -currentView.getHeight()-100);
+                                startAnimationOther(recyclerView, currentView, targetX, -currentView.getHeight() - 100);
                             }
 
                             if (otherTag.isDisable) {
@@ -629,11 +629,14 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 if (isEditMode) {
                     if (myHolder.isResident) {
                         myHolder.imgEdit.setVisibility(View.GONE);
+                        myHolder.itemView.setEnabled(false);
                     } else {
                         myHolder.imgEdit.setVisibility(View.VISIBLE);
+                        myHolder.itemView.setEnabled(true);
                     }
                 } else {
                     myHolder.imgEdit.setVisibility(View.GONE);
+                    myHolder.itemView.setEnabled(true);
                 }
                 break;
             case TYPE_OTHER_TAG_HEADER:
@@ -653,15 +656,16 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 otherHolder.textView.setText(otherTag.name);
                 otherHolder.itemView.setEnabled(!otherTag.isDisable);
                 otherHolder.isDisable = otherTag.isDisable;
-                if (isEditMode) {
+                if (otherTag.isDisable) {
                     otherHolder.plus.setVisibility(View.VISIBLE);
-                    if (otherTag.isDisable) {
-                        otherHolder.plus.setText("✅");
-                    } else {
-                        otherHolder.plus.setText("+");
-                    }
+                    otherHolder.plus.setText("✅");
                 } else {
-                    otherHolder.plus.setVisibility(View.GONE);
+                    if (isEditMode) {
+                        otherHolder.plus.setVisibility(View.VISIBLE);
+                        otherHolder.plus.setText("+");
+                    } else {
+                        otherHolder.plus.setVisibility(View.GONE);
+                    }
                 }
                 break;
         }
