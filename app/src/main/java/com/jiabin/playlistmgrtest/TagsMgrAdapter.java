@@ -512,14 +512,19 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                mIsAniming = false;
-                viewGroup.removeView(mirrorView);
-                if (currentView.getVisibility() == View.INVISIBLE) {
-                    currentView.setVisibility(View.VISIBLE);
-                }
-                if (!currentView.isEnabled()) {
-                    currentView.setEnabled(true);
-                }
+                delayHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        mIsAniming = false;
+                        viewGroup.removeView(mirrorView);
+                        if (currentView.getVisibility() == View.INVISIBLE) {
+                            currentView.setVisibility(View.VISIBLE);
+                        }
+                        if (!currentView.isEnabled()) {
+                            currentView.setEnabled(true);
+                        }
+                    }
+                },360);
             }
 
             @Override
