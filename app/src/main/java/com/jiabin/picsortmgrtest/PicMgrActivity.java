@@ -88,7 +88,8 @@ public class PicMgrActivity extends AppCompatActivity {
 //            }
 //        });
 
-        adapter = new PicMgrAdapter(this);
+        adapter = new PicMgrAdapter(this,120);
+        adapter.setProportion(1.5f);
 
         manager = new LinearLayoutManager(this);
         manager.setOrientation(LinearLayoutManager.HORIZONTAL);
@@ -131,6 +132,7 @@ public class PicMgrActivity extends AppCompatActivity {
         });
 
         picDragHelperCallback = new PicDragHelperCallback(adapter, delArea);
+        picDragHelperCallback.setScale(1.5f);
         helper = new ItemTouchHelper(picDragHelperCallback);
         helper.attachToRecyclerView(mRecy);
 

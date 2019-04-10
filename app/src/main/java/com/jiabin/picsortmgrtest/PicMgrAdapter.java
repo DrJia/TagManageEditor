@@ -32,9 +32,26 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     public static final int TYPE_PIC = 101;
     public static final int TYPE_PIC_ADD = 102;
 
-    public PicMgrAdapter(@NonNull Context context) {
+    private int mItemHeight;
+    private int mItemWidth;
+    private float mProportion = 1.0f;
+
+    public PicMgrAdapter(@NonNull Context context, int itemHeight) {
         mContext = context;
         mInflater = LayoutInflater.from(context);
+        mItemHeight = itemHeight;
+        mItemWidth = (int) (itemHeight * mProportion);
+    }
+
+    /**
+     * 设置item比例
+     *
+     * @param proportion 高度为1，宽度为高度的proportion倍
+     */
+    public void setProportion(float proportion) {
+        mProportion = proportion;
+        mItemWidth = (int) (mItemHeight * mProportion);
+        notifyDataSetChanged();
     }
 
     public void setMaxCount(@IntRange(from = 1, to = Integer.MAX_VALUE) int maxCount) {
@@ -70,7 +87,7 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
         mList.remove(pos);
         notifyItemRemoved(pos);
-        notifyItemRangeChanged(pos,getItemCount()-pos,"payload");
+        notifyItemRangeChanged(pos, getItemCount() - pos, "payload");
     }
 
     public void addItem(Pic pic) {
@@ -129,15 +146,15 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position, List<Object> payloads) {
-        if(payloads.isEmpty()){
-            onBindViewHolder(holder,position);
-        }else {
+        if (payloads.isEmpty()) {
+            onBindViewHolder(holder, position);
+        } else {
             int viewType = holder.getItemViewType();
             if (viewType == TYPE_PIC) {
                 PicViewHolder picHolder = (PicViewHolder) holder;
                 picHolder.itemView.setVisibility(View.VISIBLE);
-            }else if (viewType == TYPE_PIC_ADD) {
-                onBindViewHolder(holder,position);
+            } else if (viewType == TYPE_PIC_ADD) {
+                onBindViewHolder(holder, position);
             }
         }
     }
@@ -148,11 +165,15 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         if (viewType == TYPE_PIC) {
             Pic pic = mList.get(position);
             PicViewHolder picHolder = (PicViewHolder) holder;
+            picHolder.itemView.getLayoutParams().height = mItemHeight;
+            picHolder.itemView.getLayoutParams().width = mItemWidth;
             picHolder.itemView.setVisibility(View.VISIBLE);
             picHolder.pic.setImageResource(R.mipmap.f1);
             picHolder.txt.setText("" + pic.id);
         } else if (viewType == TYPE_PIC_ADD) {
             PicAddViewHolder picAddHolder = (PicAddViewHolder) holder;
+            picAddHolder.itemView.getLayoutParams().height = mItemHeight;
+            picAddHolder.itemView.getLayoutParams().width = mItemWidth;
 //            if(getItemCount() >= maxCount + 1){
 //                picAddHolder.itemView.setVisibility(View.GONE);
 //            }else {
@@ -183,7 +204,7 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             int pos = getAdapterPosition();
             if (v == itemView) {
                 if (mPicClickListener != null) {
-                    mPicClickListener.onPicClick(v,pos);
+                    mPicClickListener.onPicClick(v, pos);
                 }
             } else if (v == edit) {
                 removeItem(pos);
@@ -209,7 +230,8 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
     public interface PicClickListener {
-        void onPicClick(View view , int pos);
+        void onPicClick(View view, int pos);
+
         void onAddClick(View view);
     }
 
