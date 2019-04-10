@@ -78,16 +78,9 @@ public class PicMgrActivity extends AppCompatActivity {
 
         mRecy = (RecyclerView) findViewById(R.id.recy);
         delArea = (TextView) findViewById(R.id.delete_area);
-//        delArea.setOnDragListener(new View.OnDragListener() {
-//            @Override
-//            public boolean onDrag(View v, DragEvent event) {
-//                Log.d("jiabin","v:" + v.getId() + " | event:" + event.getAction());
-//                return true;
-//            }
-//        });
 
-        adapter = new PicMgrAdapter(this,120);
-        adapter.setProportion(1.5f);
+        adapter = new PicMgrAdapter(this,240);
+        adapter.setProportion(1.0f);
 
         manager = new LinearLayoutManager(this);
         manager.setOrientation(LinearLayoutManager.HORIZONTAL);

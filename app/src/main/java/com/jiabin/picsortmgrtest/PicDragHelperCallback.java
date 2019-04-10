@@ -99,8 +99,6 @@ public class PicDragHelperCallback extends ItemTouchHelper.Callback {
 
     @Override
     public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-//        int delAreaY = delArea.getTop();
-//        int delAreaX = delArea.getLeft();
         int delAreaWidth = delArea.getWidth();
         int delAreaHeight = delArea.getHeight();
 
@@ -109,12 +107,8 @@ public class PicDragHelperCallback extends ItemTouchHelper.Callback {
         int delAreaX = delLocation[0];
         int delAreaY = delLocation[1];
 
-        //Log.d("jiabin","x:" + x + " | y:" + y);
-
         int itemWidth = viewHolder.itemView.getWidth();
         int itemHeight = viewHolder.itemView.getHeight();
-//        int itemY = viewHolder.itemView.getTop();
-//        int itemX = viewHolder.itemView.getLeft();
         int[] itemLocation = new int[2];
         viewHolder.itemView.getLocationInWindow(itemLocation);
         int itemX = itemLocation[0];
@@ -125,17 +119,10 @@ public class PicDragHelperCallback extends ItemTouchHelper.Callback {
         int scaleItemX = itemX;
         int scaleItemY = itemY;
 
-        //Log.d("jiabin", "itemHeight:" + itemHeight + " | itemWidth:" + itemWidth + " | itemY:" + itemY + " | itemX:" + itemX);
-
-        //Log.d("jiabin", "scaleItemHeight:" + scaleItemHeight + " | scaleItemWidth:" + scaleItemWidth + " | scaleItemY:" + scaleItemY + " | scaleItemX:" + scaleItemX);
-
         int itemLeft = scaleItemX;
         int itemRight = scaleItemX + scaleItemWidth;
         int itemTop = scaleItemY;
         int itemBottom = scaleItemY + scaleItemHeight;
-
-        //Log.d("jiabin","delAreaY:" + delAreaY + " | delAreaHeight:" + delAreaHeight + " | dY:" + dY);
-        //Log.d("jiabin","delAreaX:" + delAreaX + " | delAreaWidth:" + delAreaWidth + " | dX:" + dX);
         boolean isInside = false;
         if (itemBottom > delAreaY && itemTop < delAreaY + delAreaHeight && itemRight > delAreaX && itemLeft < delAreaX + delAreaWidth) {
             isInside = true;
