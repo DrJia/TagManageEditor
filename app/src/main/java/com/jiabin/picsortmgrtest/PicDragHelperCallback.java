@@ -44,7 +44,7 @@ public class PicDragHelperCallback extends ItemTouchHelper.Callback {
         if (target instanceof PicMgrAdapter.PicAddViewHolder) {
             return false;
         }
-        ArrayList<Pic> list = mAdapter.getList();
+        ArrayList list = mAdapter.getList();
         if (list == null || list.size() < 2) {
             return false;
         }
@@ -95,11 +95,6 @@ public class PicDragHelperCallback extends ItemTouchHelper.Callback {
             tempHolder = null;
         }
         super.onSelectedChanged(viewHolder, actionState);
-    }
-
-    @Override
-    public void onChildDrawOver(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-        super.onChildDrawOver(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
     }
 
     @Override
