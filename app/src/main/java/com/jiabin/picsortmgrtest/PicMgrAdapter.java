@@ -27,7 +27,7 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     private int maxCount = MAX_COUNT;
 
-    private PicAddClickListener mPicAddClickListener;
+    private PicClickListener mPicClickListener;
 
     public static final int TYPE_PIC = 101;
     public static final int TYPE_PIC_ADD = 102;
@@ -68,8 +68,6 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         if (pos < 0 || pos > mList.size()) {
             return;
         }
-        //mList.get(pos).isHide = true;
-        //notifyItemChanged(pos);
         mList.remove(pos);
         notifyItemRemoved(pos);
         notifyItemRangeChanged(pos,getItemCount()-pos,"payload");
@@ -93,7 +91,7 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         if (count >= maxCount) {
             return TYPE_PIC;
         } else {
-            if (position == count - 1 + 1) {//-1+1
+            if (position == count) {//-1+1
                 return TYPE_PIC_ADD;
             } else {
                 return TYPE_PIC;
@@ -142,7 +140,6 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 onBindViewHolder(holder,position);
             }
         }
-        //super.onBindViewHolder(holder, position, payloads);
     }
 
     @Override
@@ -185,8 +182,9 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         public void onClick(View v) {
             int pos = getAdapterPosition();
             if (v == itemView) {
-                String id = "id:" + mList.get(pos).id;
-                Toast.makeText(mContext, "pos:" + pos + " | " + id, Toast.LENGTH_SHORT).show();
+                if (mPicClickListener != null) {
+                    mPicClickListener.onPicClick(v,pos);
+                }
             } else if (v == edit) {
                 removeItem(pos);
             }
@@ -204,17 +202,18 @@ public class PicMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
         @Override
         public void onClick(View v) {
-            if (mPicAddClickListener != null) {
-                mPicAddClickListener.onAddClick(v);
+            if (mPicClickListener != null) {
+                mPicClickListener.onAddClick(v);
             }
         }
     }
 
-    public interface PicAddClickListener {
+    public interface PicClickListener {
+        void onPicClick(View view , int pos);
         void onAddClick(View view);
     }
 
-    public void setPicAddClickListener(PicAddClickListener listener) {
-        mPicAddClickListener = listener;
+    public void setPicClickListener(PicClickListener listener) {
+        mPicClickListener = listener;
     }
 }

@@ -60,15 +60,9 @@ public class PicDragHelperCallback extends ItemTouchHelper.Callback {
 
     }
 
-//    @Override
-//    public boolean canDropOver(RecyclerView recyclerView, RecyclerView.ViewHolder current, RecyclerView.ViewHolder target) {
-//        return true;
-//    }
-
 
     @Override
     public long getAnimationDuration(RecyclerView recyclerView, int animationType, float animateDx, float animateDy) {
-        Log.d("jiabin","getAnimationDuration");
         if(mIsInside){
             return 0;
         }
@@ -105,12 +99,8 @@ public class PicDragHelperCallback extends ItemTouchHelper.Callback {
 
     @Override
     public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-        //Log.d("jiabin","dX:" + dX + " | dY:" + dY);
-//        int[] location = new int[2] ;
-//        delArea.getLocationInWindow(location); //获取在当前窗口内的绝对坐标
         int delAreaY = delArea.getTop();
         int itemHeight = viewHolder.itemView.getHeight();
-        //Log.d("jiabin", "delAreaY:" + delAreaY + " | itemHeight:" + itemHeight + " | dY:" + dY);
 
         boolean isInside = false;
         if(dY + itemHeight > delAreaY){
@@ -124,9 +114,6 @@ public class PicDragHelperCallback extends ItemTouchHelper.Callback {
             }
         }
         mIsInside = isInside;
-//        if(isInside && mActionState == ItemTouchHelper.ACTION_STATE_IDLE){
-//            viewHolder.itemView.setVisibility(View.INVISIBLE);
-//        }
 
         super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
     }
@@ -135,14 +122,6 @@ public class PicDragHelperCallback extends ItemTouchHelper.Callback {
     public void clearView(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
         viewHolder.itemView.setScaleX(1.0f);
         viewHolder.itemView.setScaleY(1.0f);
-//        if (mDragListener != null) {
-//            mDragListener.onDragFinish();
-//        }
-//        if(mIsInside && delPos >= 0){
-//            mAdapter.removeItem(delPos);
-//        }
-//        delPos = -1;
-        //mAdapter.notifyDataSetChanged();
         super.clearView(recyclerView, viewHolder);
     }
 

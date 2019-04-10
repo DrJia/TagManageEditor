@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.jiabin.playlistmgrtest.R;
 
@@ -101,14 +102,19 @@ public class PicMgrActivity extends AppCompatActivity {
         for (int i = 0; i < 9; i++) {
             pic = new Pic();
             pic.id = i;
-            pic.url = "";
+            pic.path = "";
             list.add(pic);
         }
 
         mRecy.setAdapter(adapter);
         adapter.setList(list);
 
-        adapter.setPicAddClickListener(new PicMgrAdapter.PicAddClickListener() {
+        adapter.setPicClickListener(new PicMgrAdapter.PicClickListener() {
+            @Override
+            public void onPicClick(View view, int pos) {
+                Toast.makeText(getApplicationContext(), "pos:" + pos + " id:" , Toast.LENGTH_SHORT).show();
+            }
+
             @Override
             public void onAddClick(View view) {
                 Pic pic = new Pic();
@@ -121,7 +127,6 @@ public class PicMgrActivity extends AppCompatActivity {
                         mRecy.smoothScrollToPosition(adapter.getItemCount() - 1);
                     }
                 }, 300);
-
             }
         });
 
