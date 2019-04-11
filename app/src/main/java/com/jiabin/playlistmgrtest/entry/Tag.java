@@ -8,4 +8,6 @@ public class Tag {
     public boolean isDisable = false;
     //常驻的
     public boolean isResident = false;
+
+    public boolean isHide = false;
 }

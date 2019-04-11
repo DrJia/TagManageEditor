@@ -10,8 +10,7 @@ import com.jiabin.playlistmgrtest.TagsMgrAdapter;
 
 public class ItemDragHelperCallback extends ItemTouchHelper.Callback {
     /**
-     * 这个方法用于让RecyclerView拦截向上滑动，向下滑动，想左滑动
-     * makeMovementFlags(dragFlags, swipeFlags);dragFlags是上下方向的滑动 swipeFlags是左右方向上的滑动
+     * 这个方法用于让RecyclerView拦截各个方向的滑动
      */
     @Override
     public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
@@ -87,7 +86,7 @@ public class ItemDragHelperCallback extends ItemTouchHelper.Callback {
      * swipe状态：当item从RecyclerView中删除的时候调用，一般我们会在onSwiped()函数里面删除掉指定的item view
      */
     @Override
-    public void clearView(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+    public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
         if (viewHolder instanceof OnDragVHListener) {
             OnDragVHListener itemViewHolder = (OnDragVHListener) viewHolder;
             itemViewHolder.onItemFinish();

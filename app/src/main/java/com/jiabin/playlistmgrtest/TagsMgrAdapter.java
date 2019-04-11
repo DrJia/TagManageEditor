@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,28 +22,35 @@ import com.jiabin.playlistmgrtest.entry.Tag;
 import com.jiabin.playlistmgrtest.entry.TagsEntry;
 import com.jiabin.playlistmgrtest.helper.OnDragVHListener;
 import com.jiabin.playlistmgrtest.helper.OnItemMoveListener;
+import com.jiabin.playlistmgrtest.helper.TagGridLayoutManager;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements OnItemMoveListener {
 
-    private static final long ANIM_TIME = 250L;
+    private static final long ANIM_TIME = 360L;
 
-    // 我的 标题部分
-    public static final int TYPE_MY_TAG_HEADER = 1;
-    // 我的
-    public static final int TYPE_MY = 2;
-    // 其他 标题部分
-    public static final int TYPE_OTHER_TAG_HEADER = 3;
-    // 其他
-    public static final int TYPE_OTHER = 4;
+    private static final long ANIM_TIME_OTHER = 360L;
+
+    private static final long ANIM_TIME_OTHER_FIRST = 500L;
+
+    public static final class VIEW_TYPES {
+        // 我的 标题部分
+        public static final int TYPE_MY_TAG_HEADER = 1001;
+        // 我的
+        public static final int TYPE_MY = 1002;
+        // 其他 标题部分
+        public static final int TYPE_OTHER_TAG_HEADER = 1003;
+        // 其他
+        public static final int TYPE_OTHER = 1004;
+    }
 
     private ItemTouchHelper mItemTouchHelper;
     private List<Tag> mMyTags;
     private List<TagsEntry> mAllTagsEntries;
     int myTagsSize;
-    //HashMap<Integer,Integer> otherHeaderPosMap = new HashMap<>();
     ArrayList<Integer> otherHeaderPosList = new ArrayList<>();
 
     private LayoutInflater mInflater;
@@ -61,9 +69,11 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private boolean mIsAniming;
 
     private Context mContext;
+    private PlayListTagItemClickListener mPlayListTagItemClickListener;
+    private PlayListTagChangeListener mPlayListTagChangeListener;
 
 
-    public TagsMgrAdapter(Context context, @NonNull ItemTouchHelper helper, int spanCount, int space, int margin, @NonNull List<Tag> myTags, @NonNull List<TagsEntry> allTagsEntries) {
+    public TagsMgrAdapter(Context context, @NonNull ItemTouchHelper helper, int spanCount, int space, int margin) {
         mContext = context;
         mInflater = LayoutInflater.from(context);
         mItemTouchHelper = helper;
@@ -72,7 +82,6 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         mMargin = margin;
         mSpanCount = spanCount;
         mItemWidth = (mScreenWitdh - mSpace * (spanCount + 1) - mMargin * 2) / spanCount;
-        refreshList(myTags, allTagsEntries);
     }
 
     private void checkDisable() {
@@ -96,6 +105,10 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return offset;
     }
 
+    public List<Tag> getMyTags() {
+        return mMyTags;
+    }
+
     public void refreshList(@NonNull List<Tag> myTags, @NonNull List<TagsEntry> allTagsEntries) {
         mMyTags = myTags;
         mAllTagsEntries = allTagsEntries;
@@ -109,7 +122,6 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             int pos = otherHeaderPosList.get(i) + mAllTagsEntries.get(i).tags.size() + 1;
             otherHeaderPosList.add(pos);
         }
-        //totalSize = 0;
         totalSize = mMyTags.size() + 1;
         for (TagsEntry entry : mAllTagsEntries) {
             totalSize += entry.tags.size() + 1;
@@ -118,14 +130,11 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         notifyDataSetChanged();
     }
 
-    //private boolean isRemoving = false;
-
     public void removeMyTag(int position) {
         int startPosition = position - 1;
         if (startPosition > mMyTags.size() - 1) {
             return;
         }
-        //Tag item = mMyTags.get(startPosition);
         mMyTags.remove(startPosition);
         myTagsSize = mMyTags.size();
         otherHeaderPosList.clear();
@@ -136,7 +145,6 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             int pos = otherHeaderPosList.get(i) + mAllTagsEntries.get(i).tags.size() + 1;
             otherHeaderPosList.add(pos);
         }
-        //totalSize = 0;
         totalSize = mMyTags.size() + 1;
         for (TagsEntry entry : mAllTagsEntries) {
             totalSize += entry.tags.size() + 1;
@@ -146,7 +154,6 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     public void addMyTag(RecyclerView recyclerView, Tag item) {
-        //
         for (Tag tag : mMyTags) {
             if (tag.id == item.id) {
                 return;
@@ -163,7 +170,6 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             int pos = otherHeaderPosList.get(i) + mAllTagsEntries.get(i).tags.size() + 1;
             otherHeaderPosList.add(pos);
         }
-        //totalSize = 0;
         totalSize = mMyTags.size() + 1;
         for (TagsEntry entry : mAllTagsEntries) {
             totalSize += entry.tags.size() + 1;
@@ -172,12 +178,11 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         GridLayoutManager gridLayoutManager = (GridLayoutManager) recyclerView.getLayoutManager();
         int pos = gridLayoutManager.findLastVisibleItemPosition();
-        //Log.d("jiabin","pos:" + pos + " totalSize:" + totalSize);
-        if (pos < totalSize - 2) {
+        Log.d("jiabin","pos:" + pos + " | totalSize:" + totalSize);
+        if (pos < totalSize) {
             //当没到底的时候insert需要notifychanged，因为会导致滚到下一页的时候item显示不正确，但是不能使用notifyDataSetChanged，否则会使动画消失
-            notifyItemRangeChanged(pos, totalSize - pos - 2);
+            notifyItemRangeChanged(pos, totalSize - pos , "payload");
         }
-        //notifyDataSetChanged();
     }
 
     /**
@@ -231,15 +236,15 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public int getItemViewType(int position) {
         if (position == 0) {
-            return TYPE_MY_TAG_HEADER;
+            return VIEW_TYPES.TYPE_MY_TAG_HEADER;
         } else if (position > 0 && position < myTagsSize + 1) {
-            return TYPE_MY;
+            return VIEW_TYPES.TYPE_MY;
         } else {
             if (otherHeaderPosList.size() > 0) {
                 if (otherHeaderPosList.contains(position)) {
-                    return TYPE_OTHER_TAG_HEADER;
+                    return VIEW_TYPES.TYPE_OTHER_TAG_HEADER;
                 } else {
-                    return TYPE_OTHER;
+                    return VIEW_TYPES.TYPE_OTHER;
                 }
             }
         }
@@ -251,236 +256,65 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull final ViewGroup parent, int viewType) {
         final View view;
         switch (viewType) {
-            case TYPE_MY_TAG_HEADER:
+            case VIEW_TYPES.TYPE_MY_TAG_HEADER:
                 view = mInflater.inflate(R.layout.item_my_tag_header, parent, false);
-                final MyTagHeaderViewHolder myHeaderholder = new MyTagHeaderViewHolder(view);
-                myHeaderholder.tvBtnEdit.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (!isEditMode) {
-                            startEditMode((RecyclerView) parent);
-                            myHeaderholder.tvBtnEdit.setText("完成");
-                            myHeaderholder.tips.setText("拖动可排序");
-                        } else {
-                            cancelEditMode((RecyclerView) parent);
-                            myHeaderholder.tvBtnEdit.setText("编辑");
-                            myHeaderholder.tips.setText("长按可编辑");
-                        }
-                    }
-                });
-                return myHeaderholder;
-            case TYPE_MY:
+                return new MyTagHeaderViewHolder(view);
+            case VIEW_TYPES.TYPE_MY:
                 view = mInflater.inflate(R.layout.item_my, parent, false);
-                final MyViewHolder myHolder = new MyViewHolder(view);
-                myHolder.itemView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (mIsAniming) {
-                            return;
-                        }
-                        int position = myHolder.getAdapterPosition();
-                        int startPosition = position - 1;
-                        if (startPosition > mMyTags.size() - 1 || startPosition < 0) {
-                            return;
-                        }
-                        Tag myTag = mMyTags.get(startPosition);
-                        if (myTag == null) {
-                            return;
-                        }
+                return new MyViewHolder((RecyclerView) parent, view);
 
-                        if (isEditMode) {
-                            RecyclerView recyclerView = ((RecyclerView) parent);
-                            GridLayoutManager manager = (GridLayoutManager) recyclerView.getLayoutManager();
-
-                            if (myTag.isResident) {
-                                return;
-                            }
-
-                            int otherPos = getOtherPosition(myTag);
-                            if (otherPos < 0) {
-                                return;
-                            }
-                            View currentView = manager.findViewByPosition(position);
-                            View targetView = manager.findViewByPosition(otherPos);
-                            int otherIndex = getOtherTagIndex(otherPos);
-                            if (otherIndex < 0) {
-                                return;
-                            }
-                            //int pos = manager.findLastVisibleItemPosition();
-
-                            otherIndex = otherIndex % mSpanCount;
-                            int targetX = getXoffset(otherIndex);
-                            if (recyclerView.indexOfChild(targetView) >= 0) {
-                                int targetY = targetView.getTop();
-                                int lastMyPosition = myTagsSize - 1;
-                                if (lastMyPosition % mSpanCount == 0) {
-                                    //我的里面最后一个在最后一个第一行
-                                    targetY = targetY - targetView.getHeight() - mSpace;
-                                }
-                                startAnimationMy(recyclerView, currentView, targetX, targetY);
-
-                            } else {
-                                startAnimationMy(recyclerView, currentView, targetX, recyclerView.getBottom() + 100);
-                            }
-                            notifyItemChanged(otherPos);
-                            removeMyTag(position);
-                            //moveMyToOther(myHolder);
-                        } else {
-                            //do nothing
-                            Toast.makeText(mContext.getApplicationContext(), "" + myTag.name, Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-                myHolder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(final View v) {
-                        if (!isEditMode) {
-                            RecyclerView recyclerView = ((RecyclerView) parent);
-                            startEditMode(recyclerView);
-
-                            // header 按钮文字 改成 "完成"
-                            View view = recyclerView.getChildAt(0);
-                            if (view == recyclerView.getLayoutManager().findViewByPosition(0)) {
-                                TextView tvBtnEdit = (TextView) view.findViewById(R.id.tv_btn_edit);
-                                tvBtnEdit.setText("完成");
-                                TextView tips = (TextView) view.findViewById(R.id.tips);
-                                tips.setText("拖动可排序");
-                            }
-                        }
-
-                        mItemTouchHelper.startDrag(myHolder);
-                        return true;
-                    }
-                });
-                return myHolder;
-
-            case TYPE_OTHER_TAG_HEADER:
+            case VIEW_TYPES.TYPE_OTHER_TAG_HEADER:
                 view = mInflater.inflate(R.layout.item_other_tag_header, parent, false);
-                OtherTagHeaderViewHolder otherHeaderViewHolder = new OtherTagHeaderViewHolder(view);
-                //otherHeaderViewHolder.tv.setText("");
-                return otherHeaderViewHolder;
-            case TYPE_OTHER:
+                return new OtherTagHeaderViewHolder(view);
+            case VIEW_TYPES.TYPE_OTHER:
                 view = mInflater.inflate(R.layout.item_other, parent, false);
-                final OtherViewHolder otherHolder = new OtherViewHolder(view);
-                otherHolder.itemView.setOnClickListener(new View.OnClickListener() {
-
-                    @Override
-                    public void onClick(View v) {
-                        //
-                        if (mIsAniming) {
-                            return;
-                        }
-
-                        RecyclerView recyclerView = ((RecyclerView) parent);
-                        RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
-                        int position = otherHolder.getAdapterPosition();
-                        Tag otherTag = getOtherTag(position);
-                        if (otherTag == null) {
-                            return;
-                        }
-                        if (isEditMode) {
-                            // 如果RecyclerView滑动到底部,移动的目标位置的y轴 - height
-                            View currentView = manager.findViewByPosition(position);
-                            // 目标位置的前一个item  即当前MyChannel的最后一个
-                            View preTargetView = manager.findViewByPosition(myTagsSize);// -1 + 1
-
-                            int myIndex = (myTagsSize - 1 + 1) % mSpanCount;
-                            int targetX = getXoffset(myIndex);
-
-//                        GridLayoutManager gridLayoutManager = ((GridLayoutManager) manager);
-//                        int spanCount = gridLayoutManager.getSpanCount();
-                            // 如果targetView不在屏幕内,则为-1
-                            // 如果在屏幕内,则添加一个位移动画
-                            if (recyclerView.indexOfChild(preTargetView) >= 0) {
-                                //int targetX = preTargetView.getLeft();
-                                int targetY = preTargetView.getTop();
-                                int targetPosition = myTagsSize - 1 + 1 + 1;
-                                int itemHeight = preTargetView.getHeight();
-                                // target 在最后一行第一个
-                                if ((targetPosition - 1) % mSpanCount == 0) {
-                                    targetY = targetY + itemHeight + mSpace;
-                                }
-                                startAnimationOther(recyclerView, currentView, targetX, targetY);
-                            } else {
-                                startAnimationOther(recyclerView, currentView, targetX, -currentView.getHeight() - 100);
-                            }
-
-                            if (otherTag.isDisable) {
-                                return;
-                            }
-                            otherTag.isDisable = true;
-                            notifyItemChanged(position);
-
-                            addMyTag(recyclerView, otherTag);
-                            //moveOtherToMy(otherHolder, recyclerView);
-                        } else {
-                            Toast.makeText(mContext, "" + otherTag.name, Toast.LENGTH_SHORT).show();
-                        }
-
-                    }
-                });
-                return otherHolder;
+                return new OtherViewHolder((RecyclerView) parent, view);
         }
         return null;
     }
 
-    /**
-     * 其他频道 移动到 我的频道 伴随延迟
-     *
-     * @param otherHolder
-     */
-//    private void moveOtherToMyWithDelay(final OtherViewHolder otherHolder, final RecyclerView recyclerView) {
-//        final int position = otherHolder.getAdapterPosition();
-//        final Tag otherTag = getOtherTag(position);
-//        if (otherTag.isDisable) {
-//            return;
-//        }
-//        otherTag.isDisable = true;
-//        notifyItemChanged(position);
-//        delayHandler.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                addMyTag(recyclerView, otherTag);
-//            }
-//        }, ANIM_TIME);
-//    }
 
     private Handler delayHandler = new Handler();
 
     /**
      * 开始增删动画 从其他到我的
      */
-    private void startAnimationOther(RecyclerView recyclerView, final View currentView, float targetX, float targetY) {
+    private void startAnimationOther(final RecyclerView recyclerView, final View currentView, OtherViewHolder otherViewHolder, final Tag otherTag, float targetX, float targetY, long animTime) {
         final ViewGroup viewGroup = (ViewGroup) recyclerView.getParent();
+        otherViewHolder.setIconDel();
         final ImageView mirrorView = addMirrorView(viewGroup, recyclerView, currentView);
+        otherViewHolder.setIconPlus();
 
         Animation animation = getTranslateAnimator(
-                targetX - currentView.getLeft(), targetY - currentView.getTop());
-        //currentView.setVisibility(View.INVISIBLE);
-        currentView.setEnabled(false);
+                targetX - currentView.getLeft(), targetY - currentView.getTop(), animTime);
         mirrorView.startAnimation(animation);
+        final TagGridLayoutManager gridLayoutManager = (TagGridLayoutManager) recyclerView.getLayoutManager();
+        gridLayoutManager.setScrollEnabled(false);
 
         animation.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
                 mIsAniming = true;
+                recyclerView.setEnabled(false);
             }
 
             @Override
             public void onAnimationEnd(Animation animation) {
+                recyclerView.setEnabled(true);
                 delayHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        mIsAniming = false;
                         viewGroup.removeView(mirrorView);
-//                        if (currentView.getVisibility() == View.INVISIBLE) {
-//                            currentView.setVisibility(View.VISIBLE);
-//                        }
-                        if (!currentView.isEnabled()) {
-                            currentView.setEnabled(true);
+                        otherTag.isHide = false;
+                        //notifyItemChanged(myTagsSize);
+                        notifyDataSetChanged();
+                        if (mPlayListTagChangeListener != null) {
+                            mPlayListTagChangeListener.onMyTagAdd((ArrayList<Tag>) mMyTags, otherTag);
                         }
+                        gridLayoutManager.setScrollEnabled(true);
+                        mIsAniming = false;
                     }
-                }, 360);
+                }, 0);
 
             }
 
@@ -494,15 +328,18 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     /**
      * 开始增删动画 从我的到其他
      */
-    private void startAnimationMy(RecyclerView recyclerView, final View currentView, float targetX, float targetY) {
+    private void startAnimationMy(final RecyclerView recyclerView, final View currentView, MyViewHolder myViewHolder, final Tag myTag, float targetX, float targetY) {
         final ViewGroup viewGroup = (ViewGroup) recyclerView.getParent();
+        myViewHolder.setIconPlus();
         final ImageView mirrorView = addMirrorView(viewGroup, recyclerView, currentView);
+        myViewHolder.setIconDel();
 
         Animation animation = getTranslateAnimator(
-                targetX - currentView.getLeft(), targetY - currentView.getTop());
+                targetX - currentView.getLeft(), targetY - currentView.getTop(), ANIM_TIME);
         currentView.setVisibility(View.INVISIBLE);
-        currentView.setEnabled(false);
         mirrorView.startAnimation(animation);
+        final TagGridLayoutManager gridLayoutManager = (TagGridLayoutManager) recyclerView.getLayoutManager();
+        gridLayoutManager.setScrollEnabled(false);
 
         animation.setAnimationListener(new Animation.AnimationListener() {
             @Override
@@ -515,16 +352,17 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 delayHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        mIsAniming = false;
                         viewGroup.removeView(mirrorView);
                         if (currentView.getVisibility() == View.INVISIBLE) {
                             currentView.setVisibility(View.VISIBLE);
                         }
-                        if (!currentView.isEnabled()) {
-                            currentView.setEnabled(true);
+                        if (mPlayListTagChangeListener != null) {
+                            mPlayListTagChangeListener.onMyTagRemove((ArrayList<Tag>) mMyTags, myTag);
                         }
+                        gridLayoutManager.setScrollEnabled(true);
+                        mIsAniming = false;
                     }
-                },360);
+                }, 0);
             }
 
             @Override
@@ -534,16 +372,8 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         });
     }
 
-    /**
-     * 添加需要移动的 镜像View
-     */
     private ImageView addMirrorView(ViewGroup parent, RecyclerView recyclerView, View view) {
-        /**
-         * 我们要获取cache首先要通过setDrawingCacheEnable方法开启cache，然后再调用getDrawingCache方法就可以获得view的cache图片了。
-         buildDrawingCache方法可以不用调用，因为调用getDrawingCache方法时，若果cache没有建立，系统会自动调用buildDrawingCache方法生成cache。
-         若想更新cache, 必须要调用destoryDrawingCache方法把旧的cache销毁，才能建立新的。
-         当调用setDrawingCacheEnabled方法设置为false, 系统也会自动把原来的cache销毁。
-         */
+        //PixelCopy.request
         view.destroyDrawingCache();
         view.setDrawingCacheEnabled(true);
         final ImageView mirrorView = new ImageView(recyclerView.getContext());
@@ -564,96 +394,62 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     /**
      * 获取位移动画
      */
-    private TranslateAnimation getTranslateAnimator(float targetX, float targetY) {
+    private TranslateAnimation getTranslateAnimator(float targetX, float targetY, long animTime) {
         TranslateAnimation translateAnimation = new TranslateAnimation(
                 Animation.RELATIVE_TO_SELF, 0f,
                 Animation.ABSOLUTE, targetX,
                 Animation.RELATIVE_TO_SELF, 0f,
                 Animation.ABSOLUTE, targetY);
-        // RecyclerView默认移动动画250ms 这里设置360ms 是为了防止在位移动画结束后 remove(view)过早 导致闪烁
-        translateAnimation.setDuration(ANIM_TIME);
+        translateAnimation.setDuration(animTime);
         translateAnimation.setFillAfter(true);
         return translateAnimation;
     }
 
-//    @Override
-//    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position, List<Object> payloads) {
-//        //super.onBindViewHolder(holder, position, payloads);
-//        switch (holder.getItemViewType()) {
-//            case TYPE_MY:
-//                MyViewHolder myHolder = (MyViewHolder) holder;
-//                if (isEditMode) {
-//                    if (myHolder.isResident) {
-//                        myHolder.imgEdit.setVisibility(View.GONE);
-//                    } else {
-//                        myHolder.imgEdit.setVisibility(View.VISIBLE);
-//                    }
-//                } else {
-//                    myHolder.imgEdit.setVisibility(View.GONE);
-//                }
-//                break;
-//            case TYPE_OTHER:
-//                OtherViewHolder otherHolder = (OtherViewHolder) holder;
-//                if (isEditMode) {
-//                    otherHolder.plus.setVisibility(View.VISIBLE);
-//                    if (otherHolder.isDisable) {
-//                        otherHolder.plus.setText("$");
-//                    } else {
-//                        otherHolder.plus.setText("+");
-//                    }
-//                } else {
-//                    otherHolder.plus.setVisibility(View.GONE);
-//                }
-//                break;
-//        }
-//    }
-
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         switch (holder.getItemViewType()) {
-            case TYPE_MY_TAG_HEADER:
+            case VIEW_TYPES.TYPE_MY_TAG_HEADER:
                 MyTagHeaderViewHolder myHeaderHolder = (MyTagHeaderViewHolder) holder;
                 if (isEditMode) {
                     myHeaderHolder.tvBtnEdit.setText("完成");
-                    myHeaderHolder.tips.setText("拖动可排序");
+                    myHeaderHolder.tips.setText("（拖动可排序）");
                 } else {
                     myHeaderHolder.tvBtnEdit.setText("编辑");
-                    myHeaderHolder.tips.setText("长按可编辑");
+                    myHeaderHolder.tips.setText("（长按可编辑）");
                 }
                 break;
-            case TYPE_MY:
+            case VIEW_TYPES.TYPE_MY:
                 MyViewHolder myHolder = (MyViewHolder) holder;
-//                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) myHolder.itemView.getLayoutParams();
-//                lp.width = mItemWidth;
-//                if ((position - 1) % mSpanCount == 0) {
-//                    //第一列
-//                    lp.setMargins(mSpace , 0,0,0);
-//                }
-                myHolder.textView.setText(mMyTags.get(position - 1).name);//-1是减掉头部
-                myHolder.isResident = mMyTags.get(position - 1).isResident;
+                Tag myListTag = mMyTags.get(position - 1);
+                myHolder.textView.setText(myListTag.name);//-1是减掉头部
+                myHolder.isResident = myListTag.isResident;
+                if (myListTag.isHide) {
+                    myHolder.itemView.setVisibility(View.INVISIBLE);
+                } else {
+                    myHolder.itemView.setVisibility(View.VISIBLE);
+                }
                 if (isEditMode) {
                     if (myHolder.isResident) {
-                        myHolder.imgEdit.setVisibility(View.GONE);
+                        myHolder.hideIcon();
                         myHolder.itemView.setEnabled(false);
                     } else {
-                        myHolder.imgEdit.setVisibility(View.VISIBLE);
+                        myHolder.setIconDel();
                         myHolder.itemView.setEnabled(true);
                     }
                 } else {
-                    myHolder.imgEdit.setVisibility(View.GONE);
+                    myHolder.hideIcon();
                     myHolder.itemView.setEnabled(true);
                 }
                 break;
-            case TYPE_OTHER_TAG_HEADER:
+            case VIEW_TYPES.TYPE_OTHER_TAG_HEADER:
                 OtherTagHeaderViewHolder otherHeaderHolder = (OtherTagHeaderViewHolder) holder;
                 int headerIndex = getOtherHeaderIndex(position);
                 if (headerIndex != -1 && headerIndex < mAllTagsEntries.size()) {
                     otherHeaderHolder.tv.setText(mAllTagsEntries.get(headerIndex).category);
                 }
                 break;
-            case TYPE_OTHER:
+            case VIEW_TYPES.TYPE_OTHER:
                 OtherViewHolder otherHolder = (OtherViewHolder) holder;
-                //otherHolder.itemView.getLayoutParams().width = mItemWidth;
                 Tag otherTag = getOtherTag(position);
                 if (otherTag == null) {
                     return;
@@ -661,16 +457,10 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 otherHolder.textView.setText(otherTag.name);
                 otherHolder.itemView.setEnabled(!otherTag.isDisable);
                 otherHolder.isDisable = otherTag.isDisable;
-                if (otherTag.isDisable) {
-                    otherHolder.plus.setVisibility(View.VISIBLE);
-                    otherHolder.plus.setText("✅");
+                if (isEditMode) {
+                    otherHolder.setIconPlus();
                 } else {
-                    if (isEditMode) {
-                        otherHolder.plus.setVisibility(View.VISIBLE);
-                        otherHolder.plus.setText("+");
-                    } else {
-                        otherHolder.plus.setVisibility(View.GONE);
-                    }
+                    otherHolder.hideIcon();
                 }
                 break;
         }
@@ -683,70 +473,27 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public void onItemMove(int fromPosition, int toPosition) {
-        Tag item = mMyTags.get(fromPosition - 1);
-        mMyTags.remove(fromPosition - 1);
-        mMyTags.add(toPosition - 1, item);
-        notifyItemMoved(fromPosition, toPosition);
+//        Tag item = mMyTags.get(fromPosition - 1);
+//        mMyTags.remove(fromPosition - 1);
+//        mMyTags.add(toPosition - 1, item);
+        Collections.swap(mMyTags, fromPosition - 1, toPosition - 1);
+        notifyItemMoved(fromPosition , toPosition);
     }
 
     /**
      * 开启编辑模式
-     *
-     * @param parent
      */
-    private void startEditMode(RecyclerView parent) {
+    private void startEditMode() {
         isEditMode = true;
         notifyDataSetChanged();
-        //notifyItemRangeChanged(0,getItemCount(),isEditMode);
-
-//        int visibleChildCount = parent.getChildCount();
-//        for (int i = 0; i < visibleChildCount; i++) {
-//            View view = parent.getChildAt(i);
-//            RecyclerView.ViewHolder holder = parent.getChildViewHolder(view);
-//            ImageView imgEdit = (ImageView) view.findViewById(R.id.img_edit);
-//            if (imgEdit != null && holder instanceof MyViewHolder) {
-//
-//                if (((MyViewHolder) holder).isResident) {
-//                    imgEdit.setVisibility(View.GONE);
-//                } else {
-//                    imgEdit.setVisibility(View.VISIBLE);
-//                }
-//            }
-//            TextView plus = (TextView)view.findViewById(R.id.plus);
-//            if(plus != null && holder instanceof OtherViewHolder){
-//                plus.setVisibility(View.VISIBLE);
-//                if(((OtherViewHolder)holder).isDisable){
-//                    plus.setText("$️");
-//                }else {
-//                    plus.setText("+");
-//                }
-//            }
-//        }
     }
 
     /**
      * 完成编辑模式
-     *
-     * @param parent
      */
-    private void cancelEditMode(RecyclerView parent) {
+    private void cancelEditMode() {
         isEditMode = false;
         notifyDataSetChanged();
-        //notifyItemRangeChanged(0,getItemCount(),isEditMode);
-
-//        int visibleChildCount = parent.getChildCount();
-//        for (int i = 0; i < visibleChildCount; i++) {
-//            View view = parent.getChildAt(i);
-//            ImageView imgEdit = (ImageView) view.findViewById(R.id.img_edit);
-//            if (imgEdit != null) {
-//                imgEdit.setVisibility(View.GONE);
-//            }
-//
-//            TextView plus = (TextView)view.findViewById(R.id.plus);
-//            if(plus != null){
-//                plus.setVisibility(View.GONE);
-//            }
-//        }
     }
 
     private int getOtherPosition(Tag myTag) {
@@ -758,7 +505,6 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     if (myTag.id == entry.tags.get(j).id) {
                         otherPos += j + 1;
                         entry.tags.get(j).isDisable = false;
-                        //notifyItemChanged(otherPos);
                         return otherPos;
                     }
                 }
@@ -768,66 +514,37 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return -1;
     }
 
-    /**
-     * 我的频道 移动到 其他频道
-     *
-     * @param myHolder
-     */
-//    private void moveMyToOther(MyViewHolder myHolder) {
-//        int position = myHolder.getAdapterPosition();
-//
-//        Tag myTag = removeMyTag(position);
-//        if (myTag == null) {
-//            return;
-//        }
-//        int otherPos = myTagsSize + 1;
-//        for (int i = 0; i < mAllTagsEntries.size(); i++) {
-//            TagsEntry entry = mAllTagsEntries.get(i);
-//            if (entry.viewType == myTag.viewType) {
-//                for (int j = 0; j < entry.tags.size(); j++) {
-//                    if (myTag.id == entry.tags.get(j).id) {
-//                        otherPos += j + 1;
-//                        entry.tags.get(j).isDisable = false;
-//                        notifyItemChanged(otherPos);
-//                        break;
-//                    }
-//                }
-//            }
-//            otherPos += entry.tags.size() + 1;
-//        }
-//
-//    }
-
-    /**
-     * 其他频道 移动到 我的频道
-     *
-     * @param otherHolder
-     */
-//    private void moveOtherToMy(OtherViewHolder otherHolder, RecyclerView recyclerView) {
-//        int position = otherHolder.getAdapterPosition();
-//        Tag otherTag = getOtherTag(position);
-//        if (otherTag.isDisable) {
-//            return;
-//        }
-//        otherTag.isDisable = true;
-//        notifyItemChanged(position);
-//
-//        addMyTag(recyclerView, otherTag);
-//    }
-
 
     /**
      * 我的频道
      */
-    public static class MyViewHolder extends RecyclerView.ViewHolder implements OnDragVHListener {
+    public class MyViewHolder extends RecyclerView.ViewHolder implements OnDragVHListener, View.OnClickListener, View.OnLongClickListener {
         private TextView textView;
-        private ImageView imgEdit;
+        private TextView del;
         public boolean isResident = false;
+        private RecyclerView recyclerView;
 
-        public MyViewHolder(View itemView) {
+        public MyViewHolder(RecyclerView parent, View itemView) {
             super(itemView);
+            recyclerView = parent;
             textView = (TextView) itemView.findViewById(R.id.tv);
-            imgEdit = (ImageView) itemView.findViewById(R.id.img_edit);
+            del = (TextView) itemView.findViewById(R.id.icon);
+            itemView.setOnClickListener(this);
+            itemView.setOnLongClickListener(this);
+        }
+
+        public void setIconDel() {
+            del.setVisibility(View.VISIBLE);
+            del.setText(" - ");
+        }
+
+        public void setIconPlus() {
+            del.setVisibility(View.VISIBLE);
+            del.setText(" + ");
+        }
+
+        public void hideIcon() {
+            del.setVisibility(View.GONE);
         }
 
         /**
@@ -844,28 +561,206 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         @Override
         public void onItemFinish() {
             itemView.setBackgroundResource(R.drawable.bg_channel);
+            if (mPlayListTagChangeListener != null) {
+                mPlayListTagChangeListener.onMyTagMove((ArrayList<Tag>) mMyTags);
+            }
+        }
+
+        @Override
+        public void onClick(View v) {
+            if (mIsAniming) {
+                return;
+            }
+            int position = getAdapterPosition();
+            int startPosition = position - 1;
+            if (startPosition > mMyTags.size() - 1 || startPosition < 0) {
+                return;
+            }
+            Tag myTag = mMyTags.get(startPosition);
+            if (myTag == null) {
+                return;
+            }
+
+            if (isEditMode) {
+                //check left item
+//                int count = 0;
+//                for (Tag tag : mMyTags) {
+//                    if (!tag.isResident) {
+//                        count++;
+//                    }
+//                }
+//                if (count <= 3) {
+//                    Toast.makeText(mContext, "不能再删除了哦", Toast.LENGTH_SHORT).show();
+//                    return;
+//                }
+                //check end
+                GridLayoutManager manager = (GridLayoutManager) recyclerView.getLayoutManager();
+
+                if (myTag.isResident) {
+                    return;
+                }
+
+                int otherPos = getOtherPosition(myTag);
+                if (otherPos < 0) {
+                    return;
+                }
+                View currentView = manager.findViewByPosition(position);
+                View targetView = manager.findViewByPosition(otherPos);
+                int otherIndex = getOtherTagIndex(otherPos);
+                if (otherIndex < 0) {
+                    return;
+                }
+
+                otherIndex = otherIndex % mSpanCount;
+                int targetX = getXoffset(otherIndex);
+                if (recyclerView.indexOfChild(targetView) >= 0) {
+                    int targetY = targetView.getTop();
+                    int lastMyPosition = myTagsSize - 1;
+                    if (lastMyPosition % mSpanCount == 0) {
+                        //我的里面最后一个在最后一个第一行
+                        targetY = targetY - targetView.getHeight() - mSpace;
+                    }
+                    startAnimationMy(recyclerView, currentView, this, myTag, targetX, targetY);
+
+                } else {
+                    startAnimationMy(recyclerView, currentView, this, myTag, targetX, recyclerView.getBottom() + 100);
+                }
+                notifyItemChanged(otherPos);
+                removeMyTag(position);
+            } else {
+                if (mPlayListTagItemClickListener != null) {
+                    mPlayListTagItemClickListener.onMyTagClick(myTag.name);
+                }
+            }
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            if (!isEditMode) {
+                startEditMode();
+
+                // header 按钮文字 改成 "完成"
+                View view = recyclerView.getChildAt(0);
+                if (view == recyclerView.getLayoutManager().findViewByPosition(0)) {
+                    TextView tvBtnEdit = (TextView) view.findViewById(R.id.tv_btn_edit);
+                    tvBtnEdit.setText("完成");
+                    TextView tips = (TextView) view.findViewById(R.id.tips);
+                    tips.setText("（拖动可排序）");
+                }
+            }
+
+            mItemTouchHelper.startDrag(this);
+            return true;
         }
     }
 
     /**
      * 其他频道
      */
-    class OtherViewHolder extends RecyclerView.ViewHolder {
+    class OtherViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
         private TextView textView;
         private TextView plus;
         public boolean isDisable = false;
+        private RecyclerView recyclerView;
 
-        public OtherViewHolder(View itemView) {
+        public OtherViewHolder(RecyclerView parent, View itemView) {
             super(itemView);
+            recyclerView = parent;
             textView = (TextView) itemView.findViewById(R.id.tv);
-            plus = (TextView) itemView.findViewById(R.id.plus);
+            plus = (TextView) itemView.findViewById(R.id.icon);
+            itemView.setOnClickListener(this);
+            itemView.setOnLongClickListener(this);
+        }
+
+        public void setIconPlus() {
+            plus.setVisibility(View.VISIBLE);
+            plus.setText(" + ");
+        }
+
+        public void setIconDel() {
+            plus.setVisibility(View.VISIBLE);
+            plus.setText(" - ");
+        }
+
+        public void hideIcon() {
+            plus.setVisibility(View.GONE);
+        }
+
+        @Override
+        public void onClick(View v) {
+            if (mIsAniming) {
+                return;
+            }
+
+            RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
+            int position = getAdapterPosition();
+            Tag otherTag = getOtherTag(position);
+            if (otherTag == null) {
+                return;
+            }
+            if (isEditMode) {
+                // 如果RecyclerView滑动到底部,移动的目标位置的y轴 - height
+                View currentView = manager.findViewByPosition(position);
+                // 目标位置的前一个item  即当前MyChannel的最后一个
+                View preTargetView = manager.findViewByPosition(myTagsSize);// -1 + 1
+
+                int myIndex = (myTagsSize - 1 + 1) % mSpanCount;
+                int targetX = getXoffset(myIndex);
+
+                if (otherTag.isDisable) {
+                    return;
+                }
+
+                // 如果targetView不在屏幕内,则为-1
+                // 如果在屏幕内,则添加一个位移动画
+                if (recyclerView.indexOfChild(preTargetView) >= 0) {
+                    int targetY = preTargetView.getTop();
+                    int targetPosition = myTagsSize - 1 + 1 + 1;
+                    int itemHeight = preTargetView.getHeight();
+                    // target 在最后一行第一个
+                    long animTime = ANIM_TIME_OTHER;
+                    if ((targetPosition - 1) % mSpanCount == 0) {
+                        targetY = targetY + itemHeight + mSpace;
+                        animTime = ANIM_TIME_OTHER_FIRST;
+                    }
+                    startAnimationOther(recyclerView, currentView, this, otherTag, targetX, targetY, animTime);
+                } else {
+                    startAnimationOther(recyclerView, currentView, this, otherTag, targetX, -currentView.getHeight() - 100, ANIM_TIME);
+                }
+
+                otherTag.isDisable = true;
+                notifyItemChanged(position);
+
+                addMyTag(recyclerView, otherTag);
+            } else {
+                if (mPlayListTagItemClickListener != null) {
+                    mPlayListTagItemClickListener.onOtherTagClick(otherTag.name);
+                }
+            }
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            if (!isEditMode) {
+                startEditMode();
+
+                // header 按钮文字 改成 "完成"
+                View view = recyclerView.getChildAt(0);
+                if (view == recyclerView.getLayoutManager().findViewByPosition(0)) {
+                    TextView tvBtnEdit = (TextView) view.findViewById(R.id.tv_btn_edit);
+                    tvBtnEdit.setText("完成");
+                    TextView tips = (TextView) view.findViewById(R.id.tips);
+                    tips.setText("（拖动可排序）");
+                }
+            }
+            return true;
         }
     }
 
     /**
      * 我的频道  标题部分
      */
-    class MyTagHeaderViewHolder extends RecyclerView.ViewHolder {
+    class MyTagHeaderViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         private TextView tvBtnEdit;
         private TextView tips;
 
@@ -873,6 +768,20 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             super(itemView);
             tvBtnEdit = (TextView) itemView.findViewById(R.id.tv_btn_edit);
             tips = (TextView) itemView.findViewById(R.id.tips);
+            tvBtnEdit.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View v) {
+            if (!isEditMode) {
+                startEditMode();
+                tvBtnEdit.setText("完成");
+                tips.setText("（拖动可排序）");
+            } else {
+                cancelEditMode();
+                tvBtnEdit.setText("编辑");
+                tips.setText("（长按可编辑）");
+            }
         }
     }
 
@@ -886,5 +795,27 @@ public class TagsMgrAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             super(itemView);
             tv = (TextView) itemView.findViewById(R.id.tv);
         }
+    }
+
+    public interface PlayListTagItemClickListener {
+        void onMyTagClick(String name);
+
+        void onOtherTagClick(String name);
+    }
+
+    public void setPlayListTagItemClickListener(PlayListTagItemClickListener listener) {
+        mPlayListTagItemClickListener = listener;
+    }
+
+    public interface PlayListTagChangeListener {
+        void onMyTagAdd(ArrayList<Tag> myTags, Tag target);
+
+        void onMyTagRemove(ArrayList<Tag> myTags, Tag target);
+
+        void onMyTagMove(ArrayList<Tag> myTags);
+    }
+
+    public void setPlayListTagChangeListener(PlayListTagChangeListener listener) {
+        mPlayListTagChangeListener = listener;
     }
 }

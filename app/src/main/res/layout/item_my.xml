@@ -8,13 +8,13 @@
     android:gravity="center"
     android:orientation="horizontal">
 
-    <ImageView
-        android:id="@+id/img_edit"
+    <TextView
+        android:id="@+id/icon"
         android:layout_width="16dp"
         android:layout_height="16dp"
         android:layout_gravity="center_vertical"
         android:layout_marginRight="5dp"
-        android:src="@mipmap/ic_channel_edit"
+        android:text=""
         android:visibility="gone" />
 
     <android.support.v7.widget.AppCompatTextView

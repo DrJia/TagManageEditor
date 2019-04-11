@@ -12,6 +12,7 @@ import android.widget.Toast;
 import com.jiabin.playlistmgrtest.entry.Tag;
 import com.jiabin.playlistmgrtest.entry.TagsEntry;
 import com.jiabin.playlistmgrtest.helper.ItemDragHelperCallback;
+import com.jiabin.playlistmgrtest.helper.TagGridLayoutManager;
 import com.jiabin.playlistmgrtest.helper.TagItemDecoration;
 
 import java.util.ArrayList;
@@ -20,17 +21,22 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView mRecy;
-    int margin = 18;
-    int space = 30;
+    private int space;
+    private int margin;
+    private TagsMgrAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        space = DimensionUtils.dip2px(this, 10);
+        margin = DimensionUtils.dip2px(this, 6);
+
+
         mRecy = (RecyclerView) findViewById(R.id.recy);
         ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) mRecy.getLayoutParams();
-        lp.setMargins(margin , 0 , margin , 0);
+        lp.setMargins(margin, 0, margin, 0);
         mRecy.requestLayout();
         init();
     }
@@ -100,22 +106,36 @@ public class MainActivity extends AppCompatActivity {
         entryList.add(styTagsEntry);
         entryList.add(sceTagsEntry);
 
-        GridLayoutManager manager = new GridLayoutManager(this, 4);
+        TagGridLayoutManager manager = new TagGridLayoutManager(this, 4);
         mRecy.setLayoutManager(manager);
-        mRecy.addItemDecoration(new TagItemDecoration(30));
+        mRecy.addItemDecoration(new TagItemDecoration(space));
         ItemDragHelperCallback callback = new ItemDragHelperCallback();
         final ItemTouchHelper helper = new ItemTouchHelper(callback);
         helper.attachToRecyclerView(mRecy);
 
-        final TagsMgrAdapter adapter = new TagsMgrAdapter(this, helper,4, space , margin,items, entryList);
+        adapter = new TagsMgrAdapter(this, helper, 4, space, margin);
         manager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int position) {
                 int viewType = adapter.getItemViewType(position);
-                return viewType == TagsMgrAdapter.TYPE_MY || viewType == TagsMgrAdapter.TYPE_OTHER ? 1 : 4;
+                return viewType == TagsMgrAdapter.VIEW_TYPES.TYPE_MY || viewType == TagsMgrAdapter.VIEW_TYPES.TYPE_OTHER ? 1 : 4;
             }
         });
         mRecy.setAdapter(adapter);
+
+        adapter.setPlayListTagItemClickListener(new TagsMgrAdapter.PlayListTagItemClickListener() {
+            @Override
+            public void onMyTagClick(String name) {
+                Toast.makeText(getApplicationContext(),name,Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onOtherTagClick(String name) {
+                Toast.makeText(getApplicationContext(),name,Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        adapter.refreshList(items, entryList);
 
 //        adapter.setOnMyChannelItemClickListener(new ChannelAdapter.OnMyChannelItemClickListener() {
 //            @Override
